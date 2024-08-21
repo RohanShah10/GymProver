@@ -152,7 +152,7 @@ export default function Home() {
       <Navbar />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Gym Tracker</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">GymProver</h1>
           <div className="flex justify-center items-center mb-4 space-x-4">
             <button
               onClick={() => handleDateChange(-1)}
