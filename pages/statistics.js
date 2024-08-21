@@ -25,6 +25,18 @@ export default function Statistics() {
     });
   }, []);
 
+  useEffect(() => {
+    if (workoutData.length > 0) {
+      renderProgressChart(workoutData);
+    }
+  }, [workoutData]);
+
+  useEffect(() => {
+    if (Object.keys(exerciseDistribution).length > 0) {
+      renderExerciseDistributionChart(exerciseDistribution);
+    }
+  }, [exerciseDistribution]);
+
   const loadStatistics = (userId) => {
     const workoutRef = ref(database, `workouts/${userId}`);
     let workoutsCount = 0;
@@ -75,14 +87,13 @@ export default function Statistics() {
       setExerciseDistribution(distribution);
       setPersonalRecords(records);
       setWorkoutData(progressData);
-
-      renderProgressChart(progressData);
-      renderExerciseDistributionChart(distribution);
     });
   };
 
   const renderProgressChart = (data) => {
-    const ctx = document.getElementById("progressChart").getContext("2d");
+    const ctx = document.getElementById("progressChart")?.getContext("2d");
+    if (!ctx) return; // Safeguard against null
+
     const formattedData = {};
 
     data.forEach(({ date, exerciseName, maxWeight }) => {
@@ -149,7 +160,8 @@ export default function Statistics() {
   const renderExerciseDistributionChart = (distribution) => {
     const ctx = document
       .getElementById("exerciseDistributionChart")
-      .getContext("2d");
+      ?.getContext("2d");
+    if (!ctx) return; // Safeguard against null
 
     new Chart(ctx, {
       type: "pie",

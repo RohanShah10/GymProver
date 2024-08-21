@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth, database } from "../firebase/firebaseConfig";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { ref, onValue, push, remove, update } from "firebase/database";
 import WorkoutForm from "../components/WorkoutForm";
 import WorkoutList from "../components/WorkoutList";
@@ -12,10 +12,11 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [workouts, setWorkouts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         loadWorkouts(currentUser.uid, selectedDate);
@@ -23,45 +24,89 @@ export default function Home() {
         router.push("/login");
       }
     });
+
+    return () => unsubscribe();
   }, [selectedDate]);
 
   const loadWorkouts = (userId, date) => {
+    if (!userId || !date) {
+      console.error("User ID or date is missing");
+      return;
+    }
+
+    setLoading(true);
     const workoutRef = ref(
       database,
       `workouts/${userId}/${date.format("YYYY-MM-DD")}`
     );
-    onValue(workoutRef, (snapshot) => {
-      const data = [];
-      snapshot.forEach((childSnapshot) => {
-        data.push({ key: childSnapshot.key, ...childSnapshot.val() });
-      });
-      setWorkouts(data);
-    });
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    setUser(null);
-    router.push("/login");
+    onValue(
+      workoutRef,
+      (snapshot) => {
+        const data = [];
+        snapshot.forEach((childSnapshot) => {
+          data.push({ key: childSnapshot.key, ...childSnapshot.val() });
+        });
+        setWorkouts(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error loading workouts: ", error);
+        setLoading(false);
+      }
+    );
   };
 
   const addWorkout = (workout) => {
+    if (!user || !selectedDate) {
+      console.error("User or selected date is missing");
+      return;
+    }
+
+    setLoading(true); // Start loading
     const workoutRef = ref(
       database,
       `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}`
     );
-    push(workoutRef, workout);
+    push(workoutRef, workout)
+      .then(() => {
+        console.log("Workout added successfully");
+        setLoading(false); // End loading
+      })
+      .catch((error) => {
+        console.error("Error adding workout: ", error);
+        setLoading(false); // End loading
+      });
   };
 
   const deleteWorkout = (workoutKey) => {
+    if (!user || !selectedDate || !workoutKey) {
+      console.error("Missing parameters for deleting workout");
+      return;
+    }
+
+    setLoading(true); // Start loading
     const workoutRef = ref(
       database,
       `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}/${workoutKey}`
     );
-    remove(workoutRef);
+    remove(workoutRef)
+      .then(() => {
+        console.log("Workout deleted successfully");
+        setLoading(false); // End loading
+      })
+      .catch((error) => {
+        console.error("Error deleting workout: ", error);
+        setLoading(false); // End loading
+      });
   };
 
   const editSet = (workoutKey, setIndex, newSet) => {
+    if (!user || !selectedDate || !workoutKey) {
+      console.error("Missing parameters for editing workout set");
+      return;
+    }
+
+    setLoading(true); // Start loading
     const workoutRef = ref(
       database,
       `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}/${workoutKey}`
@@ -70,8 +115,22 @@ export default function Home() {
       workoutRef,
       (snapshot) => {
         const workout = snapshot.val();
+        if (!workout || !workout.sets || !workout.sets[setIndex]) {
+          console.error("Invalid workout or set index");
+          setLoading(false);
+          return;
+        }
+
         workout.sets[setIndex] = newSet;
-        update(workoutRef, workout);
+        update(workoutRef, workout)
+          .then(() => {
+            console.log("Workout set updated successfully");
+            setLoading(false); // End loading
+          })
+          .catch((error) => {
+            console.error("Error updating workout set: ", error);
+            setLoading(false); // End loading
+          });
       },
       { onlyOnce: true }
     );
@@ -93,7 +152,7 @@ export default function Home() {
       <Navbar />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">GymProver</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Gym Tracker</h1>
           <div className="flex justify-center items-center mb-4 space-x-4">
             <button
               onClick={() => handleDateChange(-1)}
@@ -112,19 +171,19 @@ export default function Home() {
               Next Day
             </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-500 text-lg font-semibold p-3 rounded-lg transition-transform transform hover:scale-105"
-          >
-            Logout
-          </button>
         </div>
-        <WorkoutForm onAddWorkout={addWorkout} />
-        <WorkoutList
-          workouts={workouts}
-          onDeleteWorkout={deleteWorkout}
-          onEditSet={editSet}
-        />
+        {loading ? (
+          <div className="text-center text-lg">Loading...</div>
+        ) : (
+          <>
+            <WorkoutForm onAddWorkout={addWorkout} />
+            <WorkoutList
+              workouts={workouts}
+              onDeleteWorkout={deleteWorkout}
+              onEditSet={editSet}
+            />
+          </>
+        )}
       </div>
     </div>
   );

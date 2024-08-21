@@ -1,42 +1,55 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
 
 export default function Navbar() {
   const router = useRouter();
 
-  const isActive = (pathname) => router.pathname === pathname;
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (error) {
+      console.error("Error during logout: ", error);
+    }
+  };
 
   return (
-    <nav className="bg-gray-800 p-4 shadow-lg sticky top-0 z-50">
+    <nav className="bg-gray-800 p-4 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
         <h1 className="text-xl text-white font-bold">Gym Tracker</h1>
-        <div className="flex space-x-4">
+        <div className="flex items-center space-x-4">
           <Link
             href="/"
             className={`${
-              isActive("/") ? "bg-gray-900 text-white" : "text-gray-300"
-            } px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors duration-200`}
+              router.pathname === "/" ? "text-white" : "text-gray-400"
+            } hover:text-white transition-colors`}
           >
             Home
           </Link>
           <Link
             href="/statistics"
             className={`${
-              isActive("/statistics")
-                ? "bg-gray-900 text-white"
-                : "text-gray-300"
-            } px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors duration-200`}
+              router.pathname === "/statistics" ? "text-white" : "text-gray-400"
+            } hover:text-white transition-colors`}
           >
             Statistics
           </Link>
           <Link
             href="/diary"
             className={`${
-              isActive("/diary") ? "bg-gray-900 text-white" : "text-gray-300"
-            } px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors duration-200`}
+              router.pathname === "/diary" ? "text-white" : "text-gray-400"
+            } hover:text-white transition-colors`}
           >
             Diary
           </Link>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-500 text-sm text-white font-semibold px-3 py-1 rounded transition-transform transform hover:scale-105"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </nav>
