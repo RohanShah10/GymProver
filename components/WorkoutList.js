@@ -1,62 +1,57 @@
-export default function WorkoutList({ workouts, onDeleteWorkout, onEditSet }) {
+export default function WorkoutList({
+  workouts,
+  onDeleteWorkout,
+  onEditSet,
+  onDuplicateSet,
+  onDeleteSet,
+}) {
   return (
-    <div className="bg-gray-800 p-6 sm:p-8 rounded-lg shadow-md scrollbar">
-      <h2 className="text-xl sm:text-2xl font-semibold mb-6">
-        Today's Workouts
-      </h2>
-      <ul className="space-y-4">
-        {workouts.map((workout) => (
-          <li
-            key={workout.key}
-            className="bg-gray-700 p-4 sm:p-6 rounded-lg shadow-md transition-transform transform hover:scale-105"
-          >
-            <strong className="block text-lg sm:text-xl mb-4">
-              {workout.exerciseName}
-            </strong>
-            {workout.sets.map((set, index) => (
-              <p key={index} className="flex justify-between items-center">
-                <span className="text-sm sm:text-lg">
-                  Set {index + 1}: {set.reps} reps @ {set.weight} lbs
-                </span>
-                <span>
-                  <button
-                    className="text-red-500 hover:text-red-700 ml-4 transition-transform transform hover:scale-110"
-                    onClick={() => onDeleteWorkout(workout.key, index)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="text-blue-500 hover:text-blue-700 ml-2 transition-transform transform hover:scale-110"
-                    onClick={() => {
-                      const newReps = prompt(
-                        "Enter new number of reps:",
-                        set.reps
-                      );
-                      const newWeight = prompt("Enter new weight:", set.weight);
-                      if (newReps !== null && newWeight !== null) {
-                        onEditSet(workout.key, index, {
-                          reps: newReps,
-                          weight: newWeight,
-                        });
-                      }
-                    }}
-                  >
-                    Edit
-                  </button>
-                </span>
-              </p>
-            ))}
-            <div className="mt-4">
-              <button
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-transform transform hover:scale-105"
-                onClick={() => onDeleteWorkout(workout.key)}
-              >
-                Delete Workout
-              </button>
+    <div>
+      {workouts.map((workout, index) => (
+        <div
+          key={workout.key}
+          className="bg-gray-800 p-4 mb-4 rounded-lg shadow-md"
+        >
+          <h2 className="text-xl font-semibold mb-2">{workout.exerciseName}</h2>
+          {workout.sets.map((set, setIndex) => (
+            <div
+              key={setIndex}
+              className="flex justify-between items-center bg-gray-700 p-2 rounded mb-2"
+            >
+              <div>
+                <p>Reps: {set.reps}</p>
+                <p>Weight: {set.weight} lbs</p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => onEditSet(workout.key, setIndex, set)}
+                  className="bg-blue-500 hover:bg-blue-400 text-white text-sm px-2 py-1 rounded"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onDuplicateSet(workout.key, set)}
+                  className="bg-green-500 hover:bg-green-400 text-white text-sm px-2 py-1 rounded"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={() => onDeleteSet(workout.key, setIndex)}
+                  className="bg-red-600 hover:bg-red-500 text-white text-sm px-2 py-1 rounded"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+          <button
+            onClick={() => onDeleteWorkout(workout.key)}
+            className="bg-red-600 hover:bg-red-500 text-white text-sm px-2 py-1 rounded"
+          >
+            Delete Workout
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

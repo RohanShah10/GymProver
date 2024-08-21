@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth, database } from "../firebase/firebaseConfig";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, push, remove, update } from "firebase/database";
 import WorkoutForm from "../components/WorkoutForm";
 import WorkoutList from "../components/WorkoutList";
@@ -54,6 +54,16 @@ export default function Home() {
         setLoading(false);
       }
     );
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      router.push("/login");
+    } catch (error) {
+      console.error("Error during logout: ", error);
+    }
   };
 
   const addWorkout = (workout) => {
@@ -136,6 +146,83 @@ export default function Home() {
     );
   };
 
+  const duplicateSet = (workoutKey, set) => {
+    if (!user || !selectedDate || !workoutKey) {
+      console.error("Missing parameters for duplicating workout set");
+      return;
+    }
+
+    const workoutRef = ref(
+      database,
+      `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}/${workoutKey}`
+    );
+
+    onValue(
+      workoutRef,
+      (snapshot) => {
+        const workout = snapshot.val();
+
+        // Ensure that workout and sets exist and are in the correct format
+        if (!workout || !Array.isArray(workout.sets)) {
+          console.error("Invalid workout or sets structure");
+          return;
+        }
+
+        // Add the duplicate set to the array
+        const newSet = { ...set };
+        workout.sets.push(newSet);
+
+        // Ensure that the structure being sent to Firebase is correct
+        update(workoutRef, { sets: workout.sets })
+          .then(() => {
+            console.log("Set duplicated successfully");
+          })
+          .catch((error) => {
+            console.error("Error duplicating set: ", error);
+          });
+      },
+      { onlyOnce: true }
+    );
+  };
+
+  const deleteSet = (workoutKey, setIndex) => {
+    if (!user || !selectedDate || !workoutKey) {
+      console.error("Missing parameters for deleting workout set");
+      return;
+    }
+
+    const workoutRef = ref(
+      database,
+      `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}/${workoutKey}`
+    );
+
+    onValue(
+      workoutRef,
+      (snapshot) => {
+        const workout = snapshot.val();
+
+        // Ensure that workout and sets exist and are in the correct format
+        if (!workout || !Array.isArray(workout.sets)) {
+          console.error("Invalid workout or sets structure");
+          return;
+        }
+
+        // Remove the set at the specified index
+        workout.sets.splice(setIndex, 1);
+
+        // Update the workout in Firebase
+        update(workoutRef, { sets: workout.sets })
+          .then(() => {
+            console.log("Set deleted successfully");
+          })
+          .catch((error) => {
+            console.error("Error deleting set: ", error);
+          });
+      },
+      { onlyOnce: true }
+    );
+  };
+
   const handleDateChange = (days) => {
     const newDate = selectedDate.add(days, "day");
     const today = dayjs();
@@ -152,7 +239,7 @@ export default function Home() {
       <Navbar />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">GymProver</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Gym Tracker</h1>
           <div className="flex justify-center items-center mb-4 space-x-4">
             <button
               onClick={() => handleDateChange(-1)}
@@ -181,6 +268,8 @@ export default function Home() {
               workouts={workouts}
               onDeleteWorkout={deleteWorkout}
               onEditSet={editSet}
+              onDuplicateSet={duplicateSet}
+              onDeleteSet={deleteSet}
             />
           </>
         )}
