@@ -4,7 +4,7 @@ import { auth, database } from "../firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { ref, onValue } from "firebase/database";
 import dayjs from "dayjs";
-import Link from "next/link";
+import FileSaver from "file-saver";
 
 export default function Diary() {
   const [user, setUser] = useState(null);
@@ -38,6 +38,40 @@ export default function Diary() {
     setSelectedMonth(selectedMonth.add(direction, "month"));
   };
 
+  const downloadWorkouts = () => {
+    const workouts = [];
+
+    Object.keys(workoutHistory).forEach((date) => {
+      const workoutsOnDate = workoutHistory[date];
+
+      Object.values(workoutsOnDate).forEach((workout) => {
+        workout.sets.forEach((set) => {
+          workouts.push({
+            date,
+            exerciseName: workout.exerciseName,
+            reps: set.reps,
+            weight: set.weight,
+          });
+        });
+      });
+    });
+
+    const csvContent = [
+      ["Date", "Exercise", "Reps", "Weight"],
+      ...workouts.map((row) => [
+        row.date,
+        row.exerciseName,
+        row.reps,
+        row.weight,
+      ]),
+    ]
+      .map((e) => e.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    FileSaver.saveAs(blob, "workouts.csv");
+  };
+
   return (
     <div>
       <Navbar />
@@ -58,6 +92,16 @@ export default function Diary() {
             Next Month
           </button>
         </div>
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={downloadWorkouts}
+            className="bg-green-600 hover:bg-green-700 text-lg font-semibold px-4 py-2 rounded-lg"
+          >
+            Download Workouts
+          </button>
+        </div>
+
         <div>
           {Object.keys(workoutHistory).length > 0 ? (
             <ul className="space-y-4">
