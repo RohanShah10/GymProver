@@ -66,7 +66,7 @@ export default function Home() {
     }
   };
 
-  const addWorkout = (workout) => {
+  const addOrUpdateWorkout = (newWorkout) => {
     if (!user || !selectedDate) {
       console.error("User or selected date is missing");
       return;
@@ -77,15 +77,46 @@ export default function Home() {
       database,
       `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}`
     );
-    push(workoutRef, workout)
-      .then(() => {
-        console.log("Workout added successfully");
-        setLoading(false); // End loading
-      })
-      .catch((error) => {
-        console.error("Error adding workout: ", error);
-        setLoading(false); // End loading
-      });
+
+    // Check if the exercise already exists
+    const existingWorkout = workouts.find(
+      (workout) => workout.exerciseName === newWorkout.exerciseName
+    );
+
+    if (existingWorkout) {
+      // Add the new sets to the existing workout
+      const updatedSets = [...existingWorkout.sets, ...newWorkout.sets];
+      update(
+        ref(
+          database,
+          `workouts/${user.uid}/${selectedDate.format("YYYY-MM-DD")}/${
+            existingWorkout.key
+          }`
+        ),
+        {
+          sets: updatedSets,
+        }
+      )
+        .then(() => {
+          console.log("Workout updated successfully");
+          setLoading(false); // End loading
+        })
+        .catch((error) => {
+          console.error("Error updating workout: ", error);
+          setLoading(false); // End loading
+        });
+    } else {
+      // Add new workout
+      push(workoutRef, newWorkout)
+        .then(() => {
+          console.log("Workout added successfully");
+          setLoading(false); // End loading
+        })
+        .catch((error) => {
+          console.error("Error adding workout: ", error);
+          setLoading(false); // End loading
+        });
+    }
   };
 
   const deleteWorkout = (workoutKey) => {
@@ -239,7 +270,7 @@ export default function Home() {
       <Navbar />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Gym Tracker</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">GymProver</h1>
           <div className="flex justify-center items-center mb-4 space-x-4">
             <button
               onClick={() => handleDateChange(-1)}
@@ -263,7 +294,7 @@ export default function Home() {
           <div className="text-center text-lg">Loading...</div>
         ) : (
           <>
-            <WorkoutForm onAddWorkout={addWorkout} />
+            <WorkoutForm onAddOrUpdateWorkout={addOrUpdateWorkout} />
             <WorkoutList
               workouts={workouts}
               onDeleteWorkout={deleteWorkout}
