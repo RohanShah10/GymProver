@@ -72,6 +72,16 @@ export default function Home() {
       return;
     }
 
+    // Validation: Check if the workout has at least one set with valid reps and weight
+    if (
+      !newWorkout.sets ||
+      newWorkout.sets.length === 0 ||
+      newWorkout.sets.some((set) => !set.reps || !set.weight)
+    ) {
+      alert("Please add valid sets with reps and weight before saving.");
+      return;
+    }
+
     setLoading(true); // Start loading
     const workoutRef = ref(
       database,
